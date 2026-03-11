@@ -73,6 +73,16 @@ export function initDb() {
       CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (ProductId) REFERENCES Products(Id)
     );
+
+    CREATE TABLE IF NOT EXISTS Promotions (
+      Id INTEGER PRIMARY KEY AUTOINCREMENT,
+      Name TEXT NOT NULL,
+      DiscountPercentage REAL NOT NULL,
+      StartDate DATETIME NOT NULL,
+      EndDate DATETIME NOT NULL,
+      Active INTEGER NOT NULL DEFAULT 1,
+      CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Insert default admin if not exists
@@ -107,6 +117,18 @@ export function initDb() {
     const insertCust = db.prepare('INSERT INTO Customers (Name, Email, Phone, Address) VALUES (?, ?, ?, ?)');
     insertCust.run('John Doe', 'john@example.com', '555-0101', '123 Main St');
     insertCust.run('Jane Smith', 'jane@example.com', '555-0102', '456 Oak Ave');
+  }
+
+  // Insert sample promotions if empty
+  const promoCount = db.prepare('SELECT COUNT(*) as count FROM Promotions').get() as { count: number };
+  if (promoCount.count === 0) {
+    const insertPromo = db.prepare('INSERT INTO Promotions (Name, DiscountPercentage, StartDate, EndDate, Active) VALUES (?, ?, ?, ?, ?)');
+    const now = new Date();
+    const nextMonth = new Date();
+    nextMonth.setMonth(now.getMonth() + 1);
+    
+    insertPromo.run('Summer Sale', 15.0, now.toISOString().split('T')[0], nextMonth.toISOString().split('T')[0], 1);
+    insertPromo.run('Clearance', 30.0, now.toISOString().split('T')[0], nextMonth.toISOString().split('T')[0], 1);
   }
 }
 

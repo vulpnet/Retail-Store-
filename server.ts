@@ -140,6 +140,32 @@ async function startServer() {
     res.json(sales);
   });
 
+  // Promotions
+  app.get('/api/promotions', (req, res) => {
+    const promotions = db.prepare('SELECT * FROM Promotions ORDER BY StartDate DESC').all();
+    res.json(promotions);
+  });
+
+  app.post('/api/promotions', (req, res) => {
+    const { Name, DiscountPercentage, StartDate, EndDate, Active } = req.body;
+    const stmt = db.prepare('INSERT INTO Promotions (Name, DiscountPercentage, StartDate, EndDate, Active) VALUES (?, ?, ?, ?, ?)');
+    const result = stmt.run(Name, DiscountPercentage, StartDate, EndDate, Active ? 1 : 0);
+    res.json({ id: result.lastInsertRowid });
+  });
+
+  app.put('/api/promotions/:id', (req, res) => {
+    const { Name, DiscountPercentage, StartDate, EndDate, Active } = req.body;
+    const stmt = db.prepare('UPDATE Promotions SET Name = ?, DiscountPercentage = ?, StartDate = ?, EndDate = ?, Active = ? WHERE Id = ?');
+    stmt.run(Name, DiscountPercentage, StartDate, EndDate, Active ? 1 : 0, req.params.id);
+    res.json({ success: true });
+  });
+
+  app.delete('/api/promotions/:id', (req, res) => {
+    const stmt = db.prepare('DELETE FROM Promotions WHERE Id = ?');
+    stmt.run(req.params.id);
+    res.json({ success: true });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

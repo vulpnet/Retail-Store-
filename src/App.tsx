@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Customers from './pages/Customers';
 import Orders from './pages/Orders';
+import Promotions from './pages/Promotions';
 import Login from './pages/Login';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="products" element={<Products />} />
           <Route path="customers" element={<Customers />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="promotions" element={<Promotions />} />
         </Route>
       </Routes>
     </BrowserRouter>
