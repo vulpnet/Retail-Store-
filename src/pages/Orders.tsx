@@ -5,11 +5,13 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   const [formData, setFormData] = useState({
     CustomerId: '',
+    PromotionId: '',
     Items: [{ ProductId: '', Quantity: 1, UnitPrice: 0 }],
   });
 
@@ -17,7 +19,14 @@ export default function Orders() {
     fetchOrders();
     fetchCustomers();
     fetchProducts();
+    fetchPromotions();
   }, []);
+
+  const fetchPromotions = () => {
+    fetch('/api/promotions')
+      .then((res) => res.json())
+      .then((data) => setPromotions(data.filter((p) => p.Active === 1)));
+  };
 
   const fetchOrders = () => {
     fetch('/api/orders')
@@ -66,15 +75,29 @@ export default function Orders() {
     setFormData({ ...formData, Items: newItems });
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return formData.Items.reduce((sum, item) => sum + item.Quantity * item.UnitPrice, 0);
+  };
+
+  const calculateDiscount = () => {
+    const subtotal = calculateSubtotal();
+    if (!formData.PromotionId) return 0;
+    const promo = promotions.find((p) => p.Id === parseInt(formData.PromotionId));
+    if (!promo) return 0;
+    return subtotal * (promo.DiscountPercentage / 100);
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() - calculateDiscount();
   };
 
   const handleSave = (e) => {
     e.preventDefault();
     const payload = {
       CustomerId: formData.CustomerId,
+      PromotionId: formData.PromotionId || null,
       TotalAmount: calculateTotal(),
+      DiscountAmount: calculateDiscount(),
       Status: 'Completed',
       Items: formData.Items.filter((item) => item.ProductId !== ''),
     };
@@ -86,7 +109,7 @@ export default function Orders() {
     }).then(() => {
       setShowModal(false);
       fetchOrders();
-      setFormData({ CustomerId: '', Items: [{ ProductId: '', Quantity: 1, UnitPrice: 0 }] });
+      setFormData({ CustomerId: '', PromotionId: '', Items: [{ ProductId: '', Quantity: 1, UnitPrice: 0 }] });
     });
   };
 
@@ -161,21 +184,38 @@ export default function Orders() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Order</h2>
             <form onSubmit={handleSave} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                <select
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  value={formData.CustomerId}
-                  onChange={(e) => setFormData({ ...formData, CustomerId: e.target.value })}
-                >
-                  <option value="">Select a customer</option>
-                  {customers.map((c) => (
-                    <option key={c.Id} value={c.Id}>
-                      {c.Name} ({c.Email})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                  <select
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    value={formData.CustomerId}
+                    onChange={(e) => setFormData({ ...formData, CustomerId: e.target.value })}
+                  >
+                    <option value="">Select a customer</option>
+                    {customers.map((c) => (
+                      <option key={c.Id} value={c.Id}>
+                        {c.Name} ({c.Email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Promotion (Optional)</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    value={formData.PromotionId}
+                    onChange={(e) => setFormData({ ...formData, PromotionId: e.target.value })}
+                  >
+                    <option value="">No promotion</option>
+                    {promotions.map((p) => (
+                      <option key={p.Id} value={p.Id}>
+                        {p.Name} ({p.DiscountPercentage}%)
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -232,9 +272,21 @@ export default function Orders() {
                 </div>
               </div>
 
-              <div className="border-t pt-4 flex justify-between items-center">
-                <span className="text-lg font-medium text-gray-700">Total Amount:</span>
-                <span className="text-2xl font-bold text-indigo-600">${calculateTotal().toFixed(2)}</span>
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between items-center text-gray-600">
+                  <span>Subtotal:</span>
+                  <span>${calculateSubtotal().toFixed(2)}</span>
+                </div>
+                {formData.PromotionId && (
+                  <div className="flex justify-between items-center text-green-600">
+                    <span>Discount:</span>
+                    <span>-${calculateDiscount().toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="text-lg font-medium text-gray-700">Total Amount:</span>
+                  <span className="text-2xl font-bold text-indigo-600">${calculateTotal().toFixed(2)}</span>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-3 mt-6">

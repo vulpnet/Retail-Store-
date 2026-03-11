@@ -75,19 +75,20 @@ async function startServer() {
   // Orders
   app.get('/api/orders', (req, res) => {
     const orders = db.prepare(`
-      SELECT o.*, c.Name as CustomerName 
+      SELECT o.*, c.Name as CustomerName, p.Name as PromotionName
       FROM Orders o 
       LEFT JOIN Customers c ON o.CustomerId = c.Id
+      LEFT JOIN Promotions p ON o.PromotionId = p.Id
       ORDER BY o.CreatedAt DESC
     `).all();
     res.json(orders);
   });
 
   app.post('/api/orders', (req, res) => {
-    const { CustomerId, TotalAmount, Status, Items } = req.body;
+    const { CustomerId, PromotionId, TotalAmount, DiscountAmount, Status, Items } = req.body;
     
     const transaction = db.transaction(() => {
-      const info = db.prepare('INSERT INTO Orders (CustomerId, TotalAmount, Status) VALUES (?, ?, ?)').run(CustomerId, TotalAmount, Status);
+      const info = db.prepare('INSERT INTO Orders (CustomerId, PromotionId, TotalAmount, DiscountAmount, Status) VALUES (?, ?, ?, ?, ?)').run(CustomerId, PromotionId || null, TotalAmount, DiscountAmount || 0, Status);
       const orderId = info.lastInsertRowid;
 
       const insertDetail = db.prepare('INSERT INTO OrderDetails (OrderId, ProductId, Quantity, UnitPrice) VALUES (?, ?, ?, ?)');

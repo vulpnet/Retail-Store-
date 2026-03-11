@@ -48,10 +48,13 @@ export function initDb() {
     CREATE TABLE IF NOT EXISTS Orders (
       Id INTEGER PRIMARY KEY AUTOINCREMENT,
       CustomerId INTEGER,
+      PromotionId INTEGER,
       TotalAmount REAL NOT NULL,
+      DiscountAmount REAL DEFAULT 0,
       Status TEXT NOT NULL,
       CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (CustomerId) REFERENCES Customers(Id)
+      FOREIGN KEY (CustomerId) REFERENCES Customers(Id),
+      FOREIGN KEY (PromotionId) REFERENCES Promotions(Id)
     );
 
     CREATE TABLE IF NOT EXISTS OrderDetails (
